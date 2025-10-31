@@ -1,0 +1,7 @@
+BE/.env
+**/node_modules
+**/pycache__/
+*.log
+**/.angular
+.DS_Store
+**/env

@@ -1,0 +1,269 @@
+<div class="w-full h-full flex">
+  <div
+    class="p-2 bg-slate-800 flex flex-col justify-start h-screen gap-2 w-1/5"
+  >
+    <div class="border-b-2 border-opacity-30 border-slate-300 h-fit">
+      <div class="font-bold text-xl gradient-text mb-4 text-center h-12 pt-2">
+        <a routerLink="/chat"> DoChat </a>
+      </div>
+    </div>
+    <div class="h-5/6 overflow-y-scroll">
+      <ul
+        class="flex flex-col items-center justify-center gap-3 p-2 bg-black bg-opacity-15"
+      >
+        <li class="w-full sticky top-0">
+          <button class="btn btn-primary w-full" (click)="newChat()">
+            New Chat
+          </button>
+        </li>
+
+        @for (chat of chatHistory; track $index) {
+        <li
+          class="text-base cursor-pointer rounded-lg w-full flex items-center justify-start p-3 gap-4 hover:bg-slate-700"
+          [ngClass]="{
+            'bg-slate-700 rounded-md text-emerald-400': chat._id == chatId
+          }"
+          [title]="chat.title || chat._id"
+        >
+          <p class="font-sans class w-5/6" (click)="loadChat(chat)">
+            {{ chat.title || chat._id | slice : 0 : 15 }}..
+          </p>
+          <mat-icon (click)="deleteChat(chat)" class="hover:text-rose-500 w-1/6"
+            >delete</mat-icon
+          >
+        </li>
+        }
+      </ul>
+    </div>
+
+    <button
+      class="flex items-center justify-center w-full border-2 border-rose-400 rounded-md hover:text-white hover:bg-rose-400 text-rose-400 p-3"
+      (click)="logout()"
+    >
+      <mat-icon>logout </mat-icon>
+      @if (menuOpen) {
+
+      <p class="font-sans">Logout</p>
+      }
+    </button>
+  </div>
+
+  <div class="p-3 h-full text-white overflow-y-scroll w-4/5">
+    <div class="mx-auto h-full">
+      <div
+        class="flex flex-col bg-stone-600 bg-opacity-15 rounded-lg shadow-md h-full w-full"
+      >
+        <div class="h-5/6 flex w-full">
+          <div
+            class="overflow-y-auto px-5 w-full"
+            #scrollMe
+            [scrollTop]="scrollMe.scrollHeight"
+          >
+            <div *ngFor="let message of chatMessages" class="message mb-2">
+              <div
+                class="chat"
+                [ngClass]="{
+                  'chat-end': message.sender === 'user',
+                  'chat-start': message.sender === 'ai'
+                }"
+              >
+                <div class="chat-image avatar">
+                  <div class="w-10 flex items-center justify-center">
+                    <!-- <img
+                      alt="Tailwind CSS chat bubble component"
+                      src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.webp"
+                    /> -->
+                    @if (message.loading) {
+
+                    <span
+                      class="loading loading-infinity loading-md text-emerald-500"
+                    ></span>
+                    } @else{
+
+                    <mat-icon class="gradient-text text-xl">
+                      {{
+                        message.sender == "user"
+                          ? "account_circle"
+                          : "all_inclusive"
+                      }}
+                    </mat-icon>
+                    }
+                  </div>
+                </div>
+
+                <div
+                  class="chat-bubble text-wrap break-words max-w-[70%] text-neutral-200 flex text-base"
+                  [ngClass]="{
+                    'bg-emerald-700  font-medium': message.sender == 'user'
+                  }"
+                >
+                  <markdown
+                    [disableSanitizer]="false"
+                    [data]="message.text"
+                    [ngClass]="{ 'animate-pulse': message.loading }"
+                    [inline]="true"
+                    class="mr-2.5"
+                  ></markdown>
+                  <!-- <div [innerHTML]="message.text"></div> -->
+                  @if ( message.sender == "ai" && !message.loading) {
+                  <div
+                    class="flex items-end justify-end active:text-emerald-400 cursor-pointer"
+                    [cdkCopyToClipboard]="message.text"
+                    (cdkCopyToClipboardCopied)="copied()"
+                    title="Copy"
+                  >
+                    <mat-icon>content_copy</mat-icon>
+                  </div>
+                  }
+                  <!-- <div [innerHTML]="message.text "></div> -->
+                </div>
+              </div>
+            </div>
+
+            @if (isNew) {
+            <div
+              class="flex flex-col items-center justify-start h-fit p-1 gap-3"
+            >
+              @if (files.length<1) {
+              <div
+                class="border-dashed border-primary border-4 text-base cursor-pointer rounded-lg w-full flex items-center flex-col justify-start hover:bg-black hover:bg-opacity-15"
+                (click)="uploader.click()"
+              >
+                <span class="p-24 text-2xl">
+                  Upload Document To Start Chat
+                  <mat-icon class="">upload</mat-icon>
+                  <input
+                    hidden
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    #uploader
+                    multiple
+                    (change)="onFileSelected($event)"
+                  />
+                </span>
+              </div>
+              } @else{
+              <div
+                class="border-dashed border-primary border-4 text-base cursor-pointer rounded-lg w-full flex items-center flex-col justify-start hover:bg-black hover:bg-opacity-15"
+              >
+                @if(uploading){
+                <span class="p-24 text-2xl">
+                  <span
+                    class="loading loading-infinity loading-md text-emerald-500"
+                  ></span>
+                  Uploading Document {{ counter }}/{{ files.length }} and
+                  Getting Ready to assist you 😎
+                </span>
+                } @for (file of files; track $index) {
+
+                <span class="p-4 text-2xl">
+                  {{ file.name }}
+                  <mat-icon (click)="removeFile($index)" class="closeIcon"
+                    >close</mat-icon
+                  >
+                </span>
+                }
+              </div>
+              } @if (files.length) {
+              <div
+                class="cursor-pointer rounded-lg w-full flex items-center flex-col justify-start"
+              >
+                <button class="btn btn-primary" (click)="uploadFiles()">
+                  Process Documents
+                </button>
+              </div>
+              }
+            </div>
+
+            }
+          </div>
+          @if (chatHistory.length > 0 && !isNew &&
+          chatDetails?.attachments.length > 0) {
+          <div class="relative z-20">
+            <button
+              class="fixed right-8 top-1/2 transform -translate-y-1/2 bg-emerald-700 hover:bg-emerald-600 rounded-full p-3 shadow-lg"
+              (click)="showDocs = !showDocs"
+              title="Toggle Document View"
+            >
+              <mat-icon>description</mat-icon>
+            </button>
+
+            <div
+              class="fixed top-0 right-0 h-full w-1/2 rounded-md bg-black bg-opacity-30 flex"
+              [ngClass]="{ 'animate-pulse': !docsLoaded, hidden: !showDocs }"
+            >
+              <div class="flex items-center justify-center">
+                <button
+                  class="w-fit h-fit bg-emerald-700 hover:bg-emerald-600 rounded-full p-3 shadow-lg"
+                  (click)="showDocs = !showDocs"
+                  title="Toggle Document View"
+                >
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+              @if (!docsLoaded) {
+              <div class="flex items-center justify-center h-full">
+                Loading Document
+              </div>
+              }
+              <div class="flex flex-col items-center justify-center gap-2">
+                @for(attachment of chatDetails.attachments;track $index){
+                <span>{{ attachment.name }}</span>
+                {{ attachment }}
+                <pdf-viewer
+                  [src]="'http://localhost:3000/api/assetUrl/' + attachment._id"
+                  [render-text]="true"
+                  [original-size]="false"
+                  [show-all]="true"
+                  [render-text]="true"
+                  [render-text-mode]="1"
+                  [autoresize]="true"
+                  [page]="pageNo"
+                  style="width: 100%; height: 100%"
+                  (after-load-complete)="afterPdfLoaded($event)"
+                >
+                </pdf-viewer>
+                }
+              </div>
+            </div>
+          </div>
+
+          }
+        </div>
+
+        <div class="border-t-2 border-stone-600 p-2 h-1/6">
+          <!-- <div>
+            <button class="btn" (click)="uploader.click()">Upload Document</button>
+            <input hidden type="file" #uploader (change)="onFileSelected($event)" /> 
+            <ul>
+              <li *ngFor="let file of files; let i = index">
+                {{ file.name }}
+                <mat-icon (click)="removeFile(i)" class="closeIcon"
+                  >close</mat-icon
+                >
+              </li>
+            </ul>
+          </div> -->
+          <div
+            class="h-max w-full rounded-md bg-gradient-to-r from-emerald-500 via-green-500 to-sky-500 p-[0.2%]"
+          >
+            <div
+              class="flex h-full w-full items-center justify-center bg-slate-700 back message-container"
+            >
+              <input
+                type="text"
+                class="input bg-stone-600 bg-opacity-50 flex-grow text-white type-message"
+                placeholder="Type your message..."
+                [(ngModel)]="userMessage"
+                (keyup.enter)="sendMessage()"
+              />
+              <button class="btn" (click)="sendMessage()">
+                <mat-icon class="gradient-text text-2xl">send</mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
