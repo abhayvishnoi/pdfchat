@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from processInput import process_input
+from mean.pdfchat.pypdfservice.processInput import process_input
 from werkzeug.utils import secure_filename
 import os
 import time
